@@ -9,7 +9,21 @@ local Store = {}
 Store.profiles = {} -- [Player] = data
 Store.values = {} -- [Player] = { charge=NumberValue, wins=..., phones=..., stage=..., level=... }
 
-local ds = DataStoreService:GetDataStore("PhoneEscape_v1")
+-- تنبيه حرج: لا تستدعِ GetDataStore في أعلى الموديول — في مكان غير منشور
+-- (GameId=0) يرمي خطأً يقتل سكربت السيرفر كله عند الـrequire. كسول + pcall.
+local dsCache = nil -- false = حاولنا وفشل
+local function getDs()
+	if dsCache == nil then
+		local ok, res = pcall(function()
+			return DataStoreService:GetDataStore("PhoneEscape_v1")
+		end)
+		dsCache = (ok and res) or false
+		if not ok then
+			warn("[Phone] DataStore unavailable (unpublished place?): " .. tostring(res))
+		end
+	end
+	return dsCache or nil
+end
 
 local function defaults()
 	return {
@@ -78,7 +92,8 @@ end
 
 function Store.load(player: Player)
 	local data = defaults()
-	if not RunService:IsStudio() then
+	local ds = getDs()
+	if ds and not RunService:IsStudio() then
 		local ok, saved
 		for _ = 1, 2 do -- محاولة + إعادة: قراءة فاشلة لا تمسح تقدم أحد
 			ok, saved = pcall(function()
@@ -104,7 +119,8 @@ end
 
 function Store.save(player: Player)
 	local data = Store.profiles[player]
-	if not data or RunService:IsStudio() then
+	local ds = getDs()
+	if not data or not ds or RunService:IsStudio() then
 		return
 	end
 	data.lastSeen = os.time()

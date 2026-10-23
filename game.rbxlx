@@ -27,7 +27,7 @@
 -- التصميم المعتمدة. ملف نقي (بلا Roblox APIs) ليعمل في اختبارات Lune.
 local Config = {}
 
-Config.VERSION = "3.1" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
+Config.VERSION = "3.2" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
 
 -- ===== الشاشة الرئيسية (أرضية اللوبي) =====
 Config.GRID_COLS = 24
@@ -997,13 +997,8 @@ local Store = require(Server.Store)
 local Play = require(Server.Play)
 local Shop = require(Server.Shop)
 
--- ===== بناء العالم (فشل البناء يظهر لافتة حمراء بدل عالم فارغ) =====
-local boards
-local okBuild, buildResult = pcall(Builder.build)
-if okBuild then
-	boards = buildResult
-else
-	warn("[Phone] world build FAILED: " .. tostring(buildResult))
+-- ===== لافتة خطأ مرئية (حتى لا يموت أي فشل بصمت) =====
+local function errorSign(title, detail)
 	local sign = Instance.new("Part")
 	sign.Name = "BUILD_ERROR"
 	sign.Size = Vector3.new(70, 14, 1)
@@ -1021,15 +1016,27 @@ else
 	tl.TextScaled = true
 	tl.Font = Enum.Font.GothamBold
 	tl.TextColor3 = Color3.new(1, 1, 1)
-	tl.Text = "WORLD BUILD ERROR:\n" .. tostring(buildResult)
+	tl.Text = title .. ":\n" .. tostring(detail)
 	tl.Parent = gui
 end
 
--- ===== تشغيل الأنظمة بعزل =====
+-- ===== بناء العالم =====
+local boards
+local okBuild, buildResult = pcall(Builder.build)
+if okBuild then
+	boards = buildResult
+else
+	warn("[Phone] world build FAILED: " .. tostring(buildResult))
+	errorSign("WORLD BUILD ERROR", buildResult)
+end
+
+-- ===== تشغيل الأنظمة بعزل (فشل أي نظام يظهر على لافتة) =====
+local bootErrors = {}
 local function boot(name, fn)
 	local ok, err = pcall(fn)
 	if not ok then
 		warn(("[Phone] %s failed to start:\n%s"):format(name, debug.traceback(tostring(err))))
+		table.insert(bootErrors, name .. ": " .. tostring(err))
 	end
 end
 boot("Store", function()
@@ -1043,11 +1050,18 @@ end)
 boot("Shop", function()
 	Shop.init(ctx)
 end)
+if #bootErrors > 0 then
+	errorSign("SERVER START ERROR", table.concat(bootErrors, "\n"))
+end
 
 -- ===== لوحتا الصدارة العالميتان =====
-local odsLevel = DataStoreService:GetOrderedDataStore("PhoneTopLevel_v1")
-local odsWins = DataStoreService:GetOrderedDataStore("PhoneTopWins_v1")
-local nameStore = DataStoreService:GetDataStore("PhoneBoardNames_v1")
+-- الـgetters نفسها قد ترمي في مكان غير منشور: pcall دائمًا
+local odsLevel, odsWins, nameStore
+pcall(function()
+	odsLevel = DataStoreService:GetOrderedDataStore("PhoneTopLevel_v1")
+	odsWins = DataStoreService:GetOrderedDataStore("PhoneTopWins_v1")
+	nameStore = DataStoreService:GetDataStore("PhoneBoardNames_v1")
+end)
 
 local function writeBoard(labels, title, rows)
 	if not labels then
@@ -2294,7 +2308,21 @@ local Store = {}
 Store.profiles = {} -- [Player] = data
 Store.values = {} -- [Player] = { charge=NumberValue, wins=..., phones=..., stage=..., level=... }
 
-local ds = DataStoreService:GetDataStore("PhoneEscape_v1")
+-- تنبيه حرج: لا تستدعِ GetDataStore في أعلى الموديول — في مكان غير منشور
+-- (GameId=0) يرمي خطأً يقتل سكربت السيرفر كله عند الـrequire. كسول + pcall.
+local dsCache = nil -- false = حاولنا وفشل
+local function getDs()
+	if dsCache == nil then
+		local ok, res = pcall(function()
+			return DataStoreService:GetDataStore("PhoneEscape_v1")
+		end)
+		dsCache = (ok and res) or false
+		if not ok then
+			warn("[Phone] DataStore unavailable (unpublished place?): " .. tostring(res))
+		end
+	end
+	return dsCache or nil
+end
 
 local function defaults()
 	return {
@@ -2363,7 +2391,8 @@ end
 
 function Store.load(player: Player)
 	local data = defaults()
-	if not RunService:IsStudio() then
+	local ds = getDs()
+	if ds and not RunService:IsStudio() then
 		local ok, saved
 		for _ = 1, 2 do -- محاولة + إعادة: قراءة فاشلة لا تمسح تقدم أحد
 			ok, saved = pcall(function()
@@ -2389,7 +2418,8 @@ end
 
 function Store.save(player: Player)
 	local data = Store.profiles[player]
-	if not data or RunService:IsStudio() then
+	local ds = getDs()
+	if not data or not ds or RunService:IsStudio() then
 		return
 	end
 	data.lastSeen = os.time()
@@ -12550,7 +12580,7 @@ end)
                   <YS>1</YS>
                   <YO>0</YO>
                 </UDim2>
-                <string name="Text">✅ BUILD v3.1</string>
+                <string name="Text">✅ BUILD v3.2</string>
                 <Color3 name="TextColor3">
                   <R>0.8627451</R>
                   <G>1</G>
@@ -12585,7 +12615,7 @@ end)
                   <YS>1</YS>
                   <YO>0</YO>
                 </UDim2>
-                <string name="Text">✅ BUILD v3.1</string>
+                <string name="Text">✅ BUILD v3.2</string>
                 <Color3 name="TextColor3">
                   <R>0.8627451</R>
                   <G>1</G>

@@ -50,13 +50,8 @@ local Store = require(Server.Store)
 local Play = require(Server.Play)
 local Shop = require(Server.Shop)
 
--- ===== بناء العالم (فشل البناء يظهر لافتة حمراء بدل عالم فارغ) =====
-local boards
-local okBuild, buildResult = pcall(Builder.build)
-if okBuild then
-	boards = buildResult
-else
-	warn("[Phone] world build FAILED: " .. tostring(buildResult))
+-- ===== لافتة خطأ مرئية (حتى لا يموت أي فشل بصمت) =====
+local function errorSign(title, detail)
 	local sign = Instance.new("Part")
 	sign.Name = "BUILD_ERROR"
 	sign.Size = Vector3.new(70, 14, 1)
@@ -74,15 +69,27 @@ else
 	tl.TextScaled = true
 	tl.Font = Enum.Font.GothamBold
 	tl.TextColor3 = Color3.new(1, 1, 1)
-	tl.Text = "WORLD BUILD ERROR:\n" .. tostring(buildResult)
+	tl.Text = title .. ":\n" .. tostring(detail)
 	tl.Parent = gui
 end
 
--- ===== تشغيل الأنظمة بعزل =====
+-- ===== بناء العالم =====
+local boards
+local okBuild, buildResult = pcall(Builder.build)
+if okBuild then
+	boards = buildResult
+else
+	warn("[Phone] world build FAILED: " .. tostring(buildResult))
+	errorSign("WORLD BUILD ERROR", buildResult)
+end
+
+-- ===== تشغيل الأنظمة بعزل (فشل أي نظام يظهر على لافتة) =====
+local bootErrors = {}
 local function boot(name, fn)
 	local ok, err = pcall(fn)
 	if not ok then
 		warn(("[Phone] %s failed to start:\n%s"):format(name, debug.traceback(tostring(err))))
+		table.insert(bootErrors, name .. ": " .. tostring(err))
 	end
 end
 boot("Store", function()
@@ -96,11 +103,18 @@ end)
 boot("Shop", function()
 	Shop.init(ctx)
 end)
+if #bootErrors > 0 then
+	errorSign("SERVER START ERROR", table.concat(bootErrors, "\n"))
+end
 
 -- ===== لوحتا الصدارة العالميتان =====
-local odsLevel = DataStoreService:GetOrderedDataStore("PhoneTopLevel_v1")
-local odsWins = DataStoreService:GetOrderedDataStore("PhoneTopWins_v1")
-local nameStore = DataStoreService:GetDataStore("PhoneBoardNames_v1")
+-- الـgetters نفسها قد ترمي في مكان غير منشور: pcall دائمًا
+local odsLevel, odsWins, nameStore
+pcall(function()
+	odsLevel = DataStoreService:GetOrderedDataStore("PhoneTopLevel_v1")
+	odsWins = DataStoreService:GetOrderedDataStore("PhoneTopWins_v1")
+	nameStore = DataStoreService:GetDataStore("PhoneBoardNames_v1")
+end)
 
 local function writeBoard(labels, title, rows)
 	if not labels then
