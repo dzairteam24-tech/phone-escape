@@ -27,7 +27,7 @@
 -- التصميم المعتمدة. ملف نقي (بلا Roblox APIs) ليعمل في اختبارات Lune.
 local Config = {}
 
-Config.VERSION = "4.1" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
+Config.VERSION = "4.2" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
 
 -- ===== الشاشة الرئيسية (أرضية اللوبي) =====
 Config.GRID_COLS = 24
@@ -35,10 +35,14 @@ Config.GRID_ROWS = 18
 Config.TILE = 5 -- حجم بلاطة الأيقونة
 Config.GAP = 0.7
 Config.STEP_COOLDOWN = 0.3
--- أصوات ضغطات كيبورد ميكانيكي (عيّنات مكتبة روبلوكس الكلاسيكية للكتابة)
+-- أصوات ضغط كيبورد موثقة من صفحات متجر روبلوكس الرسمية (لا تخمين):
+-- 1) «Keyboard Pressing» — أستوديو Voldex — الأكثر تفضيلًا في فئته (55.6K)
+-- 2) «Keyboard ASMR» — Sound_Effects
+-- 3) صوت مدمج في العميل (احتياطي أخير)
 Config.STEP_SOUNDS = {
-	"rbxassetid://169446896", "rbxassetid://169446924", "rbxassetid://169446950",
-	"rbxassetid://169447220", "rbxassetid://169448775",
+	"rbxassetid://9119719891",
+	"rbxassetid://9113412955",
+	"rbxasset://sounds/click.wav",
 }
 Config.GLYPHS = {
 	"📷", "🎵", "💬", "▶️", "🗺️", "🛒", "⚙️", "📧", "🌐", "🎮",
@@ -2712,20 +2716,56 @@ local clickPool = {}
 for i = 1, 6 do
 	local s = Instance.new("Sound")
 	s.SoundId = Config.STEP_SOUNDS[(i - 1) % #Config.STEP_SOUNDS + 1]
-	s.Volume = 0.45
+	s.Volume = 0.5
 	s.Parent = gui
-	clickPool[i] = s
+	clickPool[i] = { snd = s, alive = true, gen = 0 }
 end
+-- قصّ أي صوت لم يُحمّل (معرّف ميت) بعد مهلة — لا صمت ولا بدائل خاطئة بعدها
+task.delay(4, function()
+	local anyAlive = false
+	for _, e in clickPool do
+		if (e.snd.TimeLength or 0) == 0 and not e.snd.IsLoaded then
+			e.alive = false
+		else
+			anyAlive = true
+		end
+	end
+	if not anyAlive then
+		for _, e in clickPool do
+			e.alive = true
+		end
+	end
+end)
 local clickIdx = 0
 local function playStepClick()
 	if not soundOn then
 		return
 	end
-	clickIdx = clickIdx % #clickPool + 1
-	local s = clickPool[clickIdx]
-	s.SoundId = Config.STEP_SOUNDS[math.random(#Config.STEP_SOUNDS)]
-	s.PlaybackSpeed = 0.95 + math.random() * 0.13
-	s:Play()
+	for _ = 1, #clickPool do
+		clickIdx = clickIdx % #clickPool + 1
+		local e = clickPool[clickIdx]
+		if e.alive then
+			local s = e.snd
+			s:Stop()
+			-- تسجيل ضغط طويل؟ كل خطوة تقصّ ضغطة من موضع عشوائي (كأنها مفاتيح مختلفة)
+			local len = s.TimeLength or 0
+			if len > 1.5 then
+				s.TimePosition = math.random() * (len - 0.4)
+				e.gen += 1
+				local g = e.gen
+				task.delay(0.14, function()
+					if e.gen == g then
+						s:Stop()
+					end
+				end)
+			else
+				s.TimePosition = 0
+			end
+			s.PlaybackSpeed = 0.96 + math.random() * 0.1
+			s:Play()
+			return
+		end
+	end
 end
 
 local floatPool = {}
@@ -128895,7 +128935,7 @@ end)
                   <YS>1</YS>
                   <YO>0</YO>
                 </UDim2>
-                <string name="Text">✅ BUILD v4.1</string>
+                <string name="Text">✅ BUILD v4.2</string>
                 <Color3 name="TextColor3">
                   <R>0.9411765</R>
                   <G>1</G>
@@ -128930,7 +128970,7 @@ end)
                   <YS>1</YS>
                   <YO>0</YO>
                 </UDim2>
-                <string name="Text">✅ BUILD v4.1</string>
+                <string name="Text">✅ BUILD v4.2</string>
                 <Color3 name="TextColor3">
                   <R>0.9411765</R>
                   <G>1</G>

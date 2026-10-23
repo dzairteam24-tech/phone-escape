@@ -201,20 +201,56 @@ local clickPool = {}
 for i = 1, 6 do
 	local s = Instance.new("Sound")
 	s.SoundId = Config.STEP_SOUNDS[(i - 1) % #Config.STEP_SOUNDS + 1]
-	s.Volume = 0.45
+	s.Volume = 0.5
 	s.Parent = gui
-	clickPool[i] = s
+	clickPool[i] = { snd = s, alive = true, gen = 0 }
 end
+-- قصّ أي صوت لم يُحمّل (معرّف ميت) بعد مهلة — لا صمت ولا بدائل خاطئة بعدها
+task.delay(4, function()
+	local anyAlive = false
+	for _, e in clickPool do
+		if (e.snd.TimeLength or 0) == 0 and not e.snd.IsLoaded then
+			e.alive = false
+		else
+			anyAlive = true
+		end
+	end
+	if not anyAlive then
+		for _, e in clickPool do
+			e.alive = true
+		end
+	end
+end)
 local clickIdx = 0
 local function playStepClick()
 	if not soundOn then
 		return
 	end
-	clickIdx = clickIdx % #clickPool + 1
-	local s = clickPool[clickIdx]
-	s.SoundId = Config.STEP_SOUNDS[math.random(#Config.STEP_SOUNDS)]
-	s.PlaybackSpeed = 0.95 + math.random() * 0.13
-	s:Play()
+	for _ = 1, #clickPool do
+		clickIdx = clickIdx % #clickPool + 1
+		local e = clickPool[clickIdx]
+		if e.alive then
+			local s = e.snd
+			s:Stop()
+			-- تسجيل ضغط طويل؟ كل خطوة تقصّ ضغطة من موضع عشوائي (كأنها مفاتيح مختلفة)
+			local len = s.TimeLength or 0
+			if len > 1.5 then
+				s.TimePosition = math.random() * (len - 0.4)
+				e.gen += 1
+				local g = e.gen
+				task.delay(0.14, function()
+					if e.gen == g then
+						s:Stop()
+					end
+				end)
+			else
+				s.TimePosition = 0
+			end
+			s.PlaybackSpeed = 0.96 + math.random() * 0.1
+			s:Play()
+			return
+		end
+	end
 end
 
 local floatPool = {}

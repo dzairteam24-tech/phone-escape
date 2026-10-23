@@ -3,7 +3,7 @@
 -- التصميم المعتمدة. ملف نقي (بلا Roblox APIs) ليعمل في اختبارات Lune.
 local Config = {}
 
-Config.VERSION = "4.1" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
+Config.VERSION = "4.2" -- تظهر في اللعبة (لافتة البداية + زاوية الشاشة)
 
 -- ===== الشاشة الرئيسية (أرضية اللوبي) =====
 Config.GRID_COLS = 24
@@ -11,10 +11,14 @@ Config.GRID_ROWS = 18
 Config.TILE = 5 -- حجم بلاطة الأيقونة
 Config.GAP = 0.7
 Config.STEP_COOLDOWN = 0.3
--- أصوات ضغطات كيبورد ميكانيكي (عيّنات مكتبة روبلوكس الكلاسيكية للكتابة)
+-- أصوات ضغط كيبورد موثقة من صفحات متجر روبلوكس الرسمية (لا تخمين):
+-- 1) «Keyboard Pressing» — أستوديو Voldex — الأكثر تفضيلًا في فئته (55.6K)
+-- 2) «Keyboard ASMR» — Sound_Effects
+-- 3) صوت مدمج في العميل (احتياطي أخير)
 Config.STEP_SOUNDS = {
-	"rbxassetid://169446896", "rbxassetid://169446924", "rbxassetid://169446950",
-	"rbxassetid://169447220", "rbxassetid://169448775",
+	"rbxassetid://9119719891",
+	"rbxassetid://9113412955",
+	"rbxasset://sounds/click.wav",
 }
 Config.GLYPHS = {
 	"📷", "🎵", "💬", "▶️", "🗺️", "🛒", "⚙️", "📧", "🌐", "🎮",
