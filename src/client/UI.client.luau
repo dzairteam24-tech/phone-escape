@@ -285,6 +285,7 @@ local pQuests = makePanel("quests", "🎖️ DAILY QUESTS")
 local pLinks = makePanel("links", "🔗 FAST-CHARGE LINKS (+⚡ per step)")
 
 local Rules = require(Shared.Rules)
+local lastCap = 0
 local state = {}
 local function refresh()
 	local ok, st = pcall(function()
@@ -294,6 +295,8 @@ local function refresh()
 		return
 	end
 	state = st
+	lastCap = st.cap or 0
+	syncStats()
 	levelChip.Text = "Level " .. st.level
 	barText.Text = Format.num(st.levelInto) .. " / " .. Format.num(st.levelBand)
 	barFill.Size = UDim2.new(math.clamp(st.levelInto / math.max(st.levelBand, 1), 0, 1), 0, 1, 0)
@@ -521,8 +524,11 @@ end)
 
 -- ===== مزامنة الإحصائيات + شفافية البوابات =====
 local stats = player:WaitForChild("leaderstats")
-local function syncStats()
-	bigCharge.Text = Format.num(stats.Charge.Value) .. " ⚡"
+function syncStats()
+	local chargeNow = stats.Charge.Value
+	local eff = lastCap > 0 and math.min(chargeNow, lastCap) or chargeNow
+	local spd = math.floor(16 + math.sqrt(math.max(eff, 0)) / 2)
+	bigCharge.Text = Format.num(chargeNow) .. " ⚡   🏃 " .. spd
 	winsChip.Text = "🏆 " .. Format.num(stats.Wins.Value)
 	local level = stats.Level.Value
 	local world = workspace:FindFirstChild("PhoneWorld")

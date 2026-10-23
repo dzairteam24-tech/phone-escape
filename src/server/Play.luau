@@ -492,14 +492,14 @@ function Play.init(context)
 					end
 				end
 			end
-			-- سرعة المشي من الشحن
+			-- سرعة المشي من الشحن: نمو محسوس من أول دقيقة لعب
 			local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 			if hum then
 				local eff = data.charge
 				if data.cap and data.cap > 0 then
 					eff = math.min(eff, data.cap)
 				end
-				hum.WalkSpeed = math.min(16 + math.sqrt(math.max(eff, 0)) / 4, 250)
+				hum.WalkSpeed = math.min(16 + math.sqrt(math.max(eff, 0)) / 2, 250)
 			end
 			-- البطارية
 			local run = runs[player]

@@ -257,6 +257,9 @@ for i, sf in stageFolders do
 		end
 	end
 	ok(hasBegin and hasFinish and hasKill and hasEnter, "stage " .. i .. " has begin+finish+kill+enter")
+	local killFloor = sf:FindFirstChild("KillFloor")
+	ok(killFloor ~= nil and rawget(killFloor, "__props").Position.Y < 1, "stage " .. i .. " kill floor buried below floor top (walking in is safe)")
+	ok(sf:FindFirstChild("StepIn") ~= nil, "stage " .. i .. " has a walk-in entrance step")
 end
 eq(folderCount, 15, "15 stage folders")
 eq(bossCount, 3, "3 boss folders")

@@ -428,10 +428,13 @@ function Builder.build()
 		local header = block(sf, "Header", Vector3.new(30, 5, 2), Vector3.new(cx, 26, -101), shellRgb)
 		text(header, "🗼 " .. def.name, Enum.NormalId.Front)
 
-		local kill = block(sf, "KillFloor", Vector3.new(28, 0.5, 106), Vector3.new(cx, 1.25, -157), { 255, 70, 40 }, Enum.Material.Neon)
+		-- أرضية القتل مدفونة داخل أرضية البرج: السقوط من المسار لا يقتل
+		-- بحد ذاته (تعود مشيًا للبداية)، ولا تلمس من يمشي على الأرضية
+		local kill = block(sf, "KillFloor", Vector3.new(28, 0.5, 106), Vector3.new(cx, 0.55, -157), { 255, 70, 40 }, Enum.Material.Neon)
 		kill:SetAttribute("Kill", true)
 
-		-- منصة البداية + وسادة الدخول + لافتة البوابة
+		-- منصة البداية + عتبة دخول مشيًا + وسادة الدخول + لافتة البوابة
+		block(sf, "StepIn", Vector3.new(16, 2, 4), Vector3.new(cx, 1, -102), theme.floor)
 		block(sf, "Dais", Vector3.new(16, 3, 10), Vector3.new(cx, 1.5, -109), theme.floor)
 		local begin = block(sf, "Begin", Vector3.new(16, 0.6, 6), Vector3.new(cx, 3.3, -109), { 120, 255, 140 }, Enum.Material.Neon)
 		begin:SetAttribute("Begin", i)
