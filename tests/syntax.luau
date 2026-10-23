@@ -1,34 +1,32 @@
--- Compile-check every Luau source file (Roblox APIs are not executed, only parsed).
+-- syntax.luau — يترجم كل ملفات المصدر (هذه النسخة من Lune بلا أمر check).
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local process = require("@lune/process")
 
-local files = {
+local FILES = {
 	"src/shared/Config.luau",
-	"src/shared/NumberFormat.luau",
-	"src/shared/Economy.luau",
-	"src/server/DataService.luau",
-	"src/server/MapBuilder.luau",
-	"src/server/SpeedService.luau",
-	"src/server/StageService.luau",
-	"src/server/ShopService.luau",
-	"src/server/QuestService.luau",
-	"src/server/ServerMain.server.luau",
-	"src/client/ClientMain.client.luau",
+	"src/shared/Format.luau",
+	"src/shared/Rules.luau",
+	"src/server/Store.luau",
+	"src/server/Builder.luau",
+	"src/server/Play.luau",
+	"src/server/Shop.luau",
+	"src/server/Main.server.luau",
+	"src/client/UI.client.luau",
 }
-local bad = 0
-for _, path in files do
-	local source = fs.readFile(path)
-	local ok, err = pcall(function()
-		luau.load(source, { debugName = path })
-	end)
+
+local failed = 0
+for _, path in FILES do
+	local ok, err = pcall(luau.load, fs.readFile(path))
 	if ok then
-		print("OK  ", path)
+		print("OK   " .. path)
 	else
-		bad += 1
-		print("BAD ", path, err)
+		failed += 1
+		print("FAIL " .. path .. " -> " .. tostring(err))
 	end
 end
-if bad > 0 then
-	error(bad .. " files failed to compile")
+if failed > 0 then
+	print(failed .. " file(s) failed to compile")
+	process.exit(1)
 end
-print("All files compile.")
+print("All " .. #FILES .. " source files compile")
