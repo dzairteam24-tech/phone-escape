@@ -181,7 +181,7 @@ end
 local root = workspaceInst:FindFirstChild("PhoneWorld")
 ok(root ~= nil, "PhoneWorld exists")
 
-local counts = { Icon = 0, Station = 0, StageGate = 0, Cell = 0, Star = 0, Mid = 0, Begin = 0, Finish = 0, Kill = 0, Move = 0, Sweep = 0, Belt = 0, Bounce = 0 }
+local counts = { Icon = 0, Station = 0, Enter = 0, Cell = 0, Star = 0, Mid = 0, Begin = 0, Finish = 0, Kill = 0, Move = 0, Sweep = 0, Belt = 0, Bounce = 0 }
 local portalAttrs = 0
 local stageFolders = {}
 local gates = {}
@@ -192,18 +192,18 @@ local function walk(node)
 		if counts[key] ~= nil and value then
 			counts[key] += 1
 		end
-		if key == "StageGate" then
-			table.insert(gates, node)
-		end
 		if string.find(key, "Portal") then
 			portalAttrs += 1
 		end
 	end
 	local name = rawget(node, "__props").Name
+	if name == "Gate" and attrs.Need ~= nil then
+		table.insert(gates, node)
+	end
 	if rawget(node, "__class") == "SpawnLocation" then
 		spawnFound = true
 	end
-	if name == "W2Teaser" then
+	if name == "IslandBase" then
 		teaserFound = true
 	end
 	local idx = name and string.match(name, "^Stage_(%d+)$")
@@ -216,9 +216,10 @@ local function walk(node)
 end
 walk(root)
 
-eq(counts.Icon, 432, "432 app icons")
+eq(counts.Icon, 144, "144 charge nodes")
 eq(counts.Station, 8, "8 stations")
-eq(counts.StageGate, 15, "15 gates")
+eq(counts.Enter, 15, "15 tower enter pads")
+eq(#gates, 15, "15 gate signs")
 eq(counts.Cell, 9, "9 battery cells")
 eq(counts.Star, 15, "15 stars (5 split sections x3)")
 eq(counts.Mid, 2, "2 mid checkpoints")
@@ -239,7 +240,7 @@ for i, sf in stageFolders do
 	if rawget(sf, "__attrs").Boss then
 		bossCount += 1
 	end
-	local hasBegin, hasFinish, hasKill = false, false, false
+	local hasBegin, hasFinish, hasKill, hasEnter = false, false, false, false
 	for _, c in rawget(sf, "__children") do
 		local a = rawget(c, "__attrs")
 		if a.Begin == i then
@@ -251,15 +252,24 @@ for i, sf in stageFolders do
 		if a.Kill then
 			hasKill = true
 		end
+		if a.Enter == i then
+			hasEnter = true
+		end
 	end
-	ok(hasBegin and hasFinish and hasKill, "stage " .. i .. " has begin+finish+kill")
+	ok(hasBegin and hasFinish and hasKill and hasEnter, "stage " .. i .. " has begin+finish+kill+enter")
 end
 eq(folderCount, 15, "15 stage folders")
 eq(bossCount, 3, "3 boss folders")
 
+for gi, gate in gates do
+	ok(rawget(gate, "__attrs").Need ~= nil, "gate sign " .. gi .. " carries a Need level")
+end
+local needs = {}
 for _, gate in gates do
-	local idx = rawget(gate, "__attrs").StageGate
-	eq(rawget(gate, "__attrs").Need, Config.STAGES[idx].req, "gate " .. idx .. " need matches config")
+	needs[rawget(gate, "__attrs").Need] = true
+end
+for i, def in Config.STAGES do
+	ok(needs[def.req] == true, "a gate sign shows stage " .. i .. " requirement " .. def.req)
 end
 
 print(("world: %d passed, %d failed"):format(passed, failed))

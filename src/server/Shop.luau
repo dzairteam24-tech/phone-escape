@@ -542,8 +542,10 @@ function Shop.init(context)
 			Play.toLobby(player)
 		elseif dest == "stage" then
 			local target = math.min(data.stage + 1, #Config.STAGES)
-			local z = -Config.STAGE_GAP_Z * (target - 1) - 26
-			Play.sendTo(player, CFrame.new(0, 3, z - 2))
+			local cf = Play.stageStart(target)
+			if cf then
+				Play.sendTo(player, cf)
+			end
 		elseif dest == "world2" then
 			toast(player, "🔒 World 2 — Social Apps — is coming in Update 1!")
 		end
@@ -566,8 +568,10 @@ function Shop.init(context)
 			end
 			local nxt = data.stage + 1
 			Play.claimSkip(player, nxt)
-			local z = -Config.STAGE_GAP_Z * (nxt - 1) - 26
-			Play.sendTo(player, CFrame.new(0, 3, z))
+			local cf = Play.stageStart(nxt)
+			if cf then
+				Play.sendTo(player, cf)
+			end
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 		for key, amount in Config.PACK_AMOUNTS do

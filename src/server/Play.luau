@@ -20,6 +20,7 @@ local frac = {} -- كسور الشحن المتراكمة
 local iconCd = {} -- [Player] = { [part] = clock }
 local lockToastAt = {} -- [Player] = clock (تنبيه محطة مقفلة)
 local gateToastAt = {} -- [Player] = { [stage] = clock }
+local beginAt = {} -- [stage] = CFrame (بدايات الأبراج، يملؤها init)
 local checkpoints = {} -- [Player] = CFrame
 local armed = {} -- [Player] = { [stage] = true }
 local runs = {} -- [Player] = { stage, t0, falls, stars=set, battery?, warned50, warned25 }
@@ -143,6 +144,10 @@ function Play.toLobby(player)
 	Play.sendTo(player, LOBBY_SPAWN or CFrame.new(0, 3, 80))
 end
 
+function Play.stageStart(i)
+	return beginAt[i]
+end
+
 function Play.respawn(player)
 	local run = runs[player]
 	if run then
@@ -220,9 +225,9 @@ end
 function Play.init(context)
 	ctx = context
 	local world = workspace:WaitForChild("PhoneWorld")
-	LOBBY_SPAWN = CFrame.new(0, 3, 80)
-	local lobby = world:FindFirstChild("Lobby")
-	local spawnLoc = lobby and lobby:FindFirstChild("Spawn")
+	LOBBY_SPAWN = CFrame.new(0, 3, 84)
+	local plaza = world:FindFirstChild("Plaza")
+	local spawnLoc = plaza and plaza:FindFirstChild("Spawn")
 	if spawnLoc then
 		LOBBY_SPAWN = CFrame.new(spawnLoc.Position + Vector3.new(0, 2, 0))
 	end
@@ -237,6 +242,7 @@ function Play.init(context)
 	end
 
 	local movers, spinners, blinks, belts, stars = {}, {}, {}, {}, {}
+	local enterPads = {}
 	local flashBusy = {}
 	local function flash(partObj)
 		if flashBusy[partObj] then
@@ -282,6 +288,9 @@ function Play.init(context)
 					end
 				end)
 			end
+			if d:GetAttribute("Enter") then
+				table.insert(enterPads, d)
+			end
 			if d:GetAttribute("Cell") then
 				d.Touched:Connect(function(hit)
 					local player = Players:GetPlayerFromCharacter(hit.Parent)
@@ -315,6 +324,7 @@ function Play.init(context)
 			end
 			if d:GetAttribute("Begin") then
 				local idx = d:GetAttribute("Begin")
+				beginAt[idx] = d.CFrame + Vector3.new(0, 3, 0)
 				d.Touched:Connect(function(hit)
 					local player = Players:GetPlayerFromCharacter(hit.Parent)
 					if not player then
@@ -360,6 +370,38 @@ function Play.init(context)
 				end)
 			end
 		end
+	end
+	-- وسائد دخول الأبراج: بوابة المستوى تُفحص هنا (لا عبور بلا مستوى)
+	for _, pad in enterPads do
+		local idx = pad:GetAttribute("Enter")
+		pad.Touched:Connect(function(hit)
+			local player = Players:GetPlayerFromCharacter(hit.Parent)
+			if not player then
+				return
+			end
+			local data = Store.profiles[player]
+			local target = beginAt[idx]
+			local def = Config.STAGES[idx]
+			if not (data and target and def) then
+				return
+			end
+			local level = Rules.level(data.lifetime)
+			if idx <= data.stage or level >= def.req then
+				checkpoints[player] = target
+				local root = hit.Parent:FindFirstChild("HumanoidRootPart")
+				if root then
+					root.CFrame = target
+					root.AssemblyLinearVelocity = Vector3.zero
+				end
+			else
+				gateToastAt[player] = gateToastAt[player] or {}
+				local now = os.clock()
+				if now - (gateToastAt[player][idx] or 0) > 3 then
+					gateToastAt[player][idx] = now
+					toast(player, "🧱 Tower " .. idx .. " — " .. def.name .. " needs Level " .. def.req .. "!")
+				end
+			end
+		end)
 	end
 	Play._flash = flash
 
@@ -458,23 +500,6 @@ function Play.init(context)
 					eff = math.min(eff, data.cap)
 				end
 				hum.WalkSpeed = math.min(16 + math.sqrt(math.max(eff, 0)) / 4, 250)
-			end
-			-- البوابات: عبور بلا مستوى كافٍ = ارتداد
-			local level = Rules.level(data.lifetime)
-			for i, def in Config.STAGES do
-				local gateZ = -Config.STAGE_GAP_Z * (i - 1) - 20
-				if root.Position.Z < gateZ - 1.5 and root.Position.Z > gateZ - 30 then
-					if i > data.stage and level < def.req then
-						root.CFrame = CFrame.new(root.Position.X, root.Position.Y, gateZ + 4)
-						root.AssemblyLinearVelocity = Vector3.zero
-						gateToastAt[player] = gateToastAt[player] or {}
-						if now - (gateToastAt[player][i] or 0) > 3 then
-							gateToastAt[player][i] = now
-							toast(player, "🧱 Stage " .. i .. " needs Level " .. def.req .. "!")
-						end
-					end
-					break
-				end
 			end
 			-- البطارية
 			local run = runs[player]

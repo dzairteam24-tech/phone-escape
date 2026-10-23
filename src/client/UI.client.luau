@@ -87,7 +87,7 @@ local bigCharge = el("TextLabel", {
 }, gui)
 local levelChip = el("TextLabel", {
 	Size = UDim2.new(0, 130, 0, 40), Position = UDim2.new(0.5, -330, 1, -112),
-	BackgroundColor3 = Color3.fromRGB(120, 85, 40), Font = Enum.Font.FredokaOne, TextScaled = true,
+	BackgroundColor3 = Color3.fromRGB(90, 60, 160), Font = Enum.Font.FredokaOne, TextScaled = true,
 	TextColor3 = Color3.new(1, 1, 1), Text = "Level 1", BorderSizePixel = 0,
 }, gui)
 round(levelChip, 10)
@@ -97,7 +97,7 @@ local barBg = el("Frame", {
 }, gui)
 round(barBg, 10)
 local barFill = el("Frame", {
-	Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(255, 170, 60), BorderSizePixel = 0,
+	Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(60, 220, 255), BorderSizePixel = 0,
 }, barBg)
 round(barFill, 10)
 local barText = el("TextLabel", {

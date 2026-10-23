@@ -9,7 +9,7 @@ local serde = require("@lune/serde")
 
 -- Enums كرموز مقيدة: أي عضو غير معروف في أي خاصية يفجّر الخبز
 local ENUM_MEMBERS = {
-	Material = { SmoothPlastic = true, Neon = true },
+	Material = { SmoothPlastic = true, Neon = true, Glass = true },
 	SurfaceType = { Smooth = true },
 	NormalId = { Top = true, Bottom = true, Front = true, Back = true, Left = true, Right = true },
 	SurfaceGuiSizingMode = { PixelsPerStud = true },
