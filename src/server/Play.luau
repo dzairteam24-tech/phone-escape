@@ -495,6 +495,10 @@ function Play.init(context)
 					local link = Config.LINKS[data.linkIdx] or Config.LINKS[1]
 					Play.gain(player, link.amount)
 					flash(padUnder)
+					-- صوت كيبورد + رقم طائر عند اللاعب نفسه
+					if ctx and ctx.remotes and ctx.remotes.StepFX then
+						ctx.remotes.StepFX:FireClient(player, math.max(1, math.floor(link.amount * Play.stack(player) + 0.5)))
+					end
 					if Play.hooks.icons then
 						Play.hooks.icons(player)
 					end

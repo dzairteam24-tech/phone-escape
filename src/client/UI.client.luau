@@ -196,6 +196,99 @@ pop.Volume = 0.3
 pop.Parent = gui
 local lastPopAt = 0
 
+-- ===== مؤثرات الخطوات: صوت كيبورد ممتع + أرقام طائرة =====
+local clickPool = {}
+for i = 1, 6 do
+	local s = Instance.new("Sound")
+	s.SoundId = Config.STEP_SOUNDS[(i - 1) % #Config.STEP_SOUNDS + 1]
+	s.Volume = 0.45
+	s.Parent = gui
+	clickPool[i] = s
+end
+local clickIdx = 0
+local function playStepClick()
+	if not soundOn then
+		return
+	end
+	clickIdx = clickIdx % #clickPool + 1
+	local s = clickPool[clickIdx]
+	s.SoundId = Config.STEP_SOUNDS[math.random(#Config.STEP_SOUNDS)]
+	s.PlaybackSpeed = 0.95 + math.random() * 0.13
+	s:Play()
+end
+
+local floatPool = {}
+for i = 1, 20 do
+	local bb = el("BillboardGui", {
+		Size = UDim2.new(0, 120, 0, 46), StudsOffset = Vector3.new(0, 3, 0),
+		AlwaysOnTop = true, Enabled = false,
+	}, gui)
+	local tl = el("TextLabel", {
+		Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
+		Font = Enum.Font.FredokaOne, TextScaled = true,
+		TextColor3 = Color3.fromRGB(130, 255, 110), TextStrokeTransparency = 0.2, Text = "+1",
+	}, bb)
+	floatPool[i] = { bb = bb, tl = tl, flying = false }
+end
+local floatIdx = 0
+local function spawnStepNumber(amount)
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not hrp then
+		return
+	end
+	floatIdx = floatIdx % #floatPool + 1
+	local f = floatPool[floatIdx]
+	f.bb.Adornee = hrp
+	f.bb.StudsOffset = Vector3.new(math.random(-12, 12) / 10, 3.2, 0)
+	f.tl.Text = "+" .. Format.num(amount)
+	f.tl.TextTransparency = 0
+	f.bb.Enabled = true
+	if f.flying then
+		return -- أُعيد استخدامها أثناء طيرانها: تحديث الرقم يكفي
+	end
+	f.flying = true
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < 0.8 do
+			local k = (os.clock() - t0) / 0.8
+			f.bb.StudsOffset = Vector3.new(f.bb.StudsOffset.X, 3.2 + k * 2.4, 0)
+			f.tl.TextTransparency = k * k
+			task.wait()
+		end
+		f.bb.Enabled = false
+		f.flying = false
+	end)
+end
+
+R.StepFX.OnClientEvent:Connect(function(amount)
+	playStepClick()
+	if effectsOn then
+		spawnStepNumber(amount or 1)
+	end
+end)
+
+-- كتم صوت الخطوات الافتراضي: يبقى صوت الكيبورد وحده
+local function muteDefaultSteps(char)
+	local hrp = char:WaitForChild("HumanoidRootPart", 5)
+	if not hrp then
+		return
+	end
+	local function kill(s)
+		if s:IsA("Sound") and s.Name == "Running" then
+			s.Volume = 0
+		end
+	end
+	for _, s in hrp:GetChildren() do
+		kill(s)
+	end
+	hrp.ChildAdded:Connect(kill)
+end
+player.CharacterAdded:Connect(muteDefaultSteps)
+if player.Character then
+	task.spawn(muteDefaultSteps, player.Character)
+end
+
 R.StageCleared.OnClientEvent:Connect(function()
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")

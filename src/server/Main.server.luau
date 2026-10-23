@@ -17,6 +17,7 @@ local function mk(class, name)
 end
 local R = {
 	Toast = mk("RemoteEvent", "Toast"),
+	StepFX = mk("RemoteEvent", "StepFX"),
 	StageCleared = mk("RemoteEvent", "StageCleared"),
 	SetCap = mk("RemoteEvent", "SetCap"),
 	Teleport = mk("RemoteEvent", "Teleport"),
