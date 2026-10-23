@@ -58,6 +58,14 @@ local questBtn = sideBtn("🎖️\nQuests", Color3.fromRGB(220, 170, 40), 10)
 local spinBtn = sideBtn("🎡\nSpin", Color3.fromRGB(200, 80, 200), 11)
 local linkBtn = sideBtn("🔗\nLinks", Color3.fromRGB(90, 170, 90), 12)
 
+-- رقم النسخة (زاوية الشاشة — تشخيص الملف الصحيح)
+el("TextLabel", {
+	Size = UDim2.new(0, 70, 0, 22), Position = UDim2.new(1, -76, 1, -26),
+	BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+	Font = Enum.Font.FredokaOne, TextScaled = true, TextColor3 = Color3.fromRGB(160, 255, 180),
+	Text = "v" .. Config.VERSION, BorderSizePixel = 0,
+}, gui)
+
 -- ===== شريط الهدف + البطارية =====
 local objective = el("TextLabel", {
 	Size = UDim2.new(0, 460, 0, 26), Position = UDim2.new(0.5, -230, 0, 118),

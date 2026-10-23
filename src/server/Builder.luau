@@ -295,6 +295,12 @@ function Builder.build()
 	spawn.Transparency = 0.4
 	spawn.Parent = plaza
 
+	-- لافتة رقم النسخة عند نقطة البداية (تشخيص فوري لأي ملف قديم)
+	block(plaza, "VersionPostL", Vector3.new(0.5, 5, 0.5), Vector3.new(-6, 2.5, 93), { 90, 90, 100 })
+	block(plaza, "VersionPostR", Vector3.new(0.5, 5, 0.5), Vector3.new(6, 2.5, 93), { 90, 90, 100 })
+	local vsign = block(plaza, "VersionSign", Vector3.new(15, 3.5, 0.6), Vector3.new(0, 5.4, 93), { 30, 120, 60 })
+	text(vsign, "✅ BUILD v" .. Config.VERSION, Enum.NormalId.Front, Color3.fromRGB(220, 255, 220))
+
 	local function guide(x, zz, txt, rgb)
 		block(plaza, "SignPost", Vector3.new(0.5, 5, 0.5), Vector3.new(x, 2.5, zz), { 90, 90, 100 })
 		local s = block(plaza, "Sign", Vector3.new(21, 4, 0.6), Vector3.new(x, 5.6, zz), rgb)
