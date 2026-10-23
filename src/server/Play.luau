@@ -17,7 +17,7 @@ Play.hooks = {} -- { icons=fn(player), stages=fn(player), charge=fn(player, seco
 
 local ctx -- { remotes, toast }
 local frac = {} -- كسور الشحن المتراكمة
-local iconCd = {} -- [Player] = { [part] = clock }
+local lastPad = {} -- [Player] = آخر زر داسه (خطوة على زر جديد = +1 فقط)
 local lockToastAt = {} -- [Player] = clock (تنبيه محطة مقفلة)
 local gateToastAt = {} -- [Player] = { [stage] = clock }
 local beginAt = {} -- [stage] = CFrame (بدايات الأبراج، يملؤها init)
@@ -249,13 +249,11 @@ function Play.init(context)
 			return
 		end
 		flashBusy[partObj] = true
-		local c, m = partObj.Color, partObj.Material
-		partObj.Color = Color3.fromRGB(190, 255, 200)
-		partObj.Material = Enum.Material.Neon
-		task.delay(0.25, function()
+		local c = partObj.Color
+		partObj.Color = Color3.fromRGB(255, 255, 235) -- وميض أبيض ناعم بلا نيون
+		task.delay(0.18, function()
 			if partObj.Parent then
 				partObj.Color = c
-				partObj.Material = m
 			end
 			flashBusy[partObj] = nil
 		end)
@@ -464,17 +462,15 @@ function Play.init(context)
 			params.FilterDescendantsInstances = { w }
 			local hits = workspace:GetPartBoundsInBox(CFrame.new(root.Position - Vector3.new(0, 2.6, 0)), Vector3.new(3.4, 2.2, 3.4), params)
 			local now = os.clock()
-			iconCd[player] = iconCd[player] or {}
+			local padUnder, bestD = nil, math.huge
 			for _, hit in hits do
 				if hit:GetAttribute("Icon") then
-					if now - (iconCd[player][hit] or 0) >= Config.STEP_COOLDOWN then
-						iconCd[player][hit] = now
-						local link = Config.LINKS[data.linkIdx] or Config.LINKS[1]
-						Play.gain(player, link.amount)
-						flash(hit)
-						if Play.hooks.icons then
-							Play.hooks.icons(player)
-						end
+					local dx = hit.Position.X - root.Position.X
+					local dz = hit.Position.Z - root.Position.Z
+					local d2 = dx * dx + dz * dz
+					if d2 < bestD then
+						bestD = d2
+						padUnder = hit
 					end
 				elseif hit:GetAttribute("Station") then
 					local idx = hit:GetAttribute("Station")
@@ -491,6 +487,20 @@ function Play.init(context)
 						end
 					end
 				end
+			end
+			-- خطوة على زرّ جديد = +شحن (الوقوف على نفس الزر لا يمنح شيئًا)
+			if padUnder then
+				if padUnder ~= lastPad[player] then
+					lastPad[player] = padUnder
+					local link = Config.LINKS[data.linkIdx] or Config.LINKS[1]
+					Play.gain(player, link.amount)
+					flash(padUnder)
+					if Play.hooks.icons then
+						Play.hooks.icons(player)
+					end
+				end
+			else
+				lastPad[player] = nil
 			end
 			-- سرعة المشي من الشحن: نمو محسوس من أول دقيقة لعب
 			local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -524,7 +534,7 @@ function Play.init(context)
 
 	Players.PlayerRemoving:Connect(function(player)
 		frac[player] = nil
-		iconCd[player] = nil
+		lastPad[player] = nil
 		lockToastAt[player] = nil
 		gateToastAt[player] = nil
 		checkpoints[player] = nil

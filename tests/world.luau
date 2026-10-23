@@ -216,7 +216,7 @@ local function walk(node)
 end
 walk(root)
 
-eq(counts.Icon, 144, "144 charge nodes")
+eq(counts.Icon, 1353, "1353 carpet buttons")
 eq(counts.Station, 8, "8 stations")
 eq(counts.Enter, 15, "15 tower enter pads")
 eq(#gates, 15, "15 gate signs")
